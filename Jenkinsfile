@@ -30,8 +30,9 @@ pipeline {
             steps {
                 script {
                     echo "Building the docker image ..."
+                    whoami
                     buildImage(env.IMAGE_NAME)
-                    dockerLogine()
+                    dockerLogin()
                     dockerPush(env.IMAGE_NAME)
                 }
             }
