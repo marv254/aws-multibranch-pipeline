@@ -14,7 +14,7 @@ pipeline {
         maven 'Maven'
     }
     environment {
-        IMAGE_NAME = 'marv254/java-maven-app:1.0'
+        IMAGE_NAME = 'marv254/my-repo:java-maven-2.0'
     }
     stages {
         stage('build app') {
