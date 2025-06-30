@@ -69,7 +69,7 @@ pipeline {
         stage('commit version update'){
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                    withCredentials([usernamePassword(credentialsId: 'GitHub-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
                         sh 'git remote set-url origin https://$USER:$PASS@github.com/aws-multibranch-pipeline.git'
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
