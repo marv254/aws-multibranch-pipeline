@@ -70,7 +70,7 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'GitHub-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh 'git remote set-url origin https://$USER:$PASS@github.com/aws-multibranch-pipeline.git'
+                        sh 'git remote set-url origin https://$USER:$PASS@github.com/$USER/aws-multibranch-pipeline.git'
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
                         sh 'git push origin HEAD:master'
