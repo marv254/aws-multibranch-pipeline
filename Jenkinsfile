@@ -1,16 +1,20 @@
-#!/usr/bin/env groovy
+#!/usr/bin.env groovy
 
 library identifier: 'jenkins-shared-library@master', retriever: modernSCM(
     [$class: 'GitSCMSource',
-    remote: 'https://gitlab.com/twn-devops-bootcamp/latest/09-aws/jenkins-shared-library.git',
-    credentialsID: 'gitlab-credentials'
+    remote: 'https://github.com/marv254/jenkins-shared-library.git',
+    credentialsID: 'dockerhub-creds'
     ]
 )
 
-pipeline {
+
+pipeline {   
     agent any
     tools {
         maven 'Maven'
+    }
+    environment {
+        IMAGE_NAME = 'marv254/java-maven-app:1.0'
     }
     stages {
         stage('increment version') {
@@ -26,49 +30,55 @@ pipeline {
                 }
             }
         }
+
         stage('build app') {
             steps {
-                echo 'building application jar...'
-                buildJar()
+                script{
+                    echo 'Building the application'
+                    buildJar()
+                }
             }
         }
-        stage('build image') {
+
+        stage("build image") {
             steps {
                 script {
-                    echo 'building the docker image...'
+                    echo "Building the docker image ..."
+                    sh "whoami"
                     buildImage(env.IMAGE_NAME)
                     dockerLogin()
                     dockerPush(env.IMAGE_NAME)
                 }
             }
-        } 
+        }
+
         stage("deploy") {
+            environment{
+                AWS_ACCESS_KEY_ID = credentials("AWS_ACCESS_KEY_ID")
+                AWS_SECRET_ACCESS_KEY = credentials("AWS_SECRET_ACCESS_KEY")
+                APP_NAME = "java-maven-app"
+            }
             steps {
                 script {
-                    echo 'deploying docker image to EC2...'
-
-                    def shellCmd = "bash ./server-cmds.sh ${IMAGE_NAME}"
-                    def ec2Instance = "ec2-user@18.184.54.160"
-
-                    sshagent(['ec2-server-key']) {
-                        sh "scp server-cmds.sh ${ec2Instance}:/home/ec2-user"
-                        sh "scp docker-compose.yaml ${ec2Instance}:/home/ec2-user"
-                        sh "ssh -o StrictHostKeyChecking=no ${ec2Instance} ${shellCmd}"
-                    }
+                    echo "Deploying the application..."
+                    sh "envsubst < kubernetes/deployment.yaml | kubectl apply -f "
+                    sh " envsubst < kubernetes/services.yaml | kubectl apply -f "
+                
                 }
-            }               
-        }
+            }
+        }     
         stage('commit version update'){
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'gitlab-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh 'git remote set-url origin https://$USER:$PASS@gitlab.com/twn-devops-bootcamp/latest/09-AWS/java-maven-app.git'
+                    withCredentials([usernamePassword(credentialsId: 'GitHub-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                        sh 'git remote set-url origin https://$USER:$PASS@github.com/$USER/aws-multibranch-pipeline.git'
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
-                        sh 'git push origin HEAD:jenkins-jobs'
+                        sh 'git push origin HEAD:master'
                     }
                 }
             }
-        }
+             
     }
-}
+    }
+} 
