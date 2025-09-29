@@ -14,6 +14,8 @@ pipeline {
         maven 'Maven'
     }
     environment {
+        DOCKER_REPO = '701769180403.dkr.ecr.ap-southeast-2.amazonaws.com/java-maven-app'
+        DOCKER_REPO_SERVER = '701769180403.dkr.ecr.ap-southeast-2.amazonaws.com'
         IMAGE_NAME = 'marv254/java-maven-app:1.0'
     }
     stages {
@@ -40,14 +42,15 @@ pipeline {
             }
         }
 
-        stage("build image") {
+         stage('build image') {
             steps {
                 script {
-                    echo "Building the docker image ..."
-                    sh "whoami"
-                    buildImage(env.IMAGE_NAME)
-                    dockerLogin()
-                    dockerPush(env.IMAGE_NAME)
+                    echo "building the docker image..."
+                    withCredentials([usernamePassword(credentialsId: 'ecr-creds', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh "docker build -t ${DOCKER_REPO}:${IMAGE_NAME} ."
+                        sh "echo $PASS | docker login -u $USER --password-stdin ${DOCKER_REPO_SERVER}"
+                        sh "docker push ${DOCKER_REPO}:${IMAGE_NAME} ${DOCKER_REPO_SERVER}"
+                    }
                 }
             }
         }
