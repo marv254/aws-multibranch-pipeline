@@ -75,26 +75,9 @@ pipeline {
                     sh "scp -o StrictHostKeyChecking=no server-cmds.sh ${ec2Instance}:/home/ec2-user"
                     sh "scp -o StrictHostKeyChecking=no docker-compose.yaml ${ec2Instance}:/home/ec2-user"
                     sh "ssh -o StrictHostKeyChecking=no ${ec2Instance} ${shellCmd}"
-
                     }
                 }
             }
         }  
-        stage('commit version update'){
-            steps {
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'GitHub-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
-                        sh 'git config --global user.email "jenkinserver@devopsmarv.com"'
-                        sh 'git config --global user.name "jenkins"'
-
-                        sh 'git remote set-url origin https://$USER:$PASS@github.com/$USER/aws-multibranch-pipeline.git'
-                        sh 'git add .'
-                        sh 'git commit -m "ci: version bump"'
-                        sh 'git push origin HEAD:master'
-                    }
-                }
-            }
-             
-    }
     }
 } 
