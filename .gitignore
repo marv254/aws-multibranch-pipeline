@@ -1,2 +1,4 @@
 .idea/*
 target
+terraform/.terraform/*
+terraform/.terraform*

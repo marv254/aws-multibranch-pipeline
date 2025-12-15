@@ -11,7 +11,7 @@ variable avail_zone {
     default = "ap-southeast-2"
 }
 variable "my_ip" {
-    default = "106.71.63.97"
+    default = "106.71.63.97/32"
 }
 
 variable "jenkins_ip" {
