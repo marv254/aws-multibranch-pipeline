@@ -98,6 +98,9 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'GitHub-token', passwordVariable: 'PASS', usernameVariable: 'USER')]){
+                        sh 'git config --global user.email "jenkinserver@devopsmarv.com"'
+                        sh 'git config --global user.name "jenkins"'
+
                         sh 'git remote set-url origin https://$USER:$PASS@github.com/$USER/aws-multibranch-pipeline.git'
                         sh 'git add .'
                         sh 'git commit -m "ci: version bump"'
