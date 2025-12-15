@@ -8,6 +8,9 @@ variable env_prefix {
     default = "dev"
 }
 variable avail_zone {
+    default = "ap-southeast-2a"
+}
+variable region {
     default = "ap-southeast-2"
 }
 variable "my_ip" {
