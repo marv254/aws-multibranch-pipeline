@@ -71,15 +71,15 @@ pipeline {
             }
         }
         stage("deploy") {
-            environment {
-                DOCKER_CREDS = credentials('docker-hub-repo')
+            environment{
+                DOCKER_CREDS = credentials('dockerhub-creds')
             }
             steps {
                 script {
-                echo "waiting for EC2 server to initialize"
+                echo "Waiting for EC2 Server to initialize " 
                 sleep(time: 90, unit: "SECONDS")
 
-                echo 'deploying docker image to EC2...'
+                echo 'Deploying docker image to EC2...'
                 echo "${EC2_PUBLIC_IP}"
                 
                 def shellCmd = "bash ./server-cmds.sh ${IMAGE_NAME} ${DOCKER_CREDS_USR} ${DOCKER_CREDS_PSW}"
