@@ -1,75 +1,174 @@
-# AWS Multibranch Pipeline – `master` Branch
+---
 
-This branch defines a **Jenkins Multibranch Pipeline** that automates the build, containerization, deployment, and version management of a **Java Maven application**.  
+# COmplete CI/CD Pipeline with Jenkins
 
-The pipeline integrates with a **shared Jenkins library**, DockerHub, AWS (EC2), and GitHub for full CI/CD automation.
+This repository demonstrates a **complete CI/CD pipeline** built using **Jenkins Multibranch Pipeline** to build a Java application, containerize it with Docker, provision AWS infrastructure using Terraform, and deploy the application to an EC2 instance via SSH.
 
+In this setup, **Jenkins is already running as a Docker container on a DigitalOcean cloud server**, acting as the CI/CD control plane.
 
 ---
 
-## 🚀 Pipeline Workflow
+## 🧱 Environment Setup
 
-The pipeline (defined in `Jenkinsfile`) includes the following stages:
+### Jenkins Environment
 
-1. **Increment Version**  
-   - Uses Maven `build-helper` and `versions` plugins to bump the application version in `pom.xml`.  
-   - Updates the Docker image tag with `${version}-${BUILD_NUMBER}`.  
+* Jenkins is deployed as a **Docker container** on a **DigitalOcean cloud server**
+* Jenkins is responsible for:
 
-2. **Build App**  
-   - Calls the shared library function `buildJar()` to compile and package the Java Maven application into a JAR file.  
+  * Source code checkout
+  * Pipeline execution
+  * Infrastructure provisioning
+  * Application deployment
 
-3. **Build Image**  
-   - Builds a Docker image of the application using the shared library functions.  
-   - Authenticates to DockerHub (`dockerLogin()`) and pushes the image (`dockerPush()`).  
-
-4. **Deploy**  
-   - Copies `server-cmds.sh` and `docker-compose.yaml` to a remote **AWS EC2 instance** via `scp`.  
-   - Executes the deployment script over SSH to run the new container.  
-
-5. **Commit Version Update**  
-   - Commits the updated `pom.xml` (new version) back to the GitHub repository.  
-   - Uses Jenkins credentials (`GitHub-token`) for authenticated push.  
+The Jenkins container has access to the host Docker daemon to allow Docker image builds.
 
 ---
 
-## 🔧 Requirements
+## 🔧 Jenkins Prerequisites & Configuration
 
-To successfully run this pipeline, ensure the following are installed on the **Jenkins agent** (or controller if running builds there):
+### Jenkins Plugins Installed
 
-- [Maven](https://maven.apache.org/)  
-- [Docker](https://docs.docker.com/get-docker/)  
+The following plugins are required and installed:
 
-Additionally:  
-- Jenkins must have **AWS credentials** configured for deployments.  
-- DockerHub credentials (`dockerhub-creds`) must be set up in Jenkins.  
-- SSH credentials for the EC2 instance (`ec2-user`) must be added in Jenkins.  
-- A **GitHub token** must be stored as `GitHub-token` in Jenkins credentials for pushing commits.
+* **Pipeline**
+* **Multibranch Pipeline**
+* **Git / GitHub Branch Source**
+* **Docker Pipeline**
+* **SSH Agent Plugin**
+* **Credentials Binding Plugin**
 
----
-
-## ⚙️ Setup
-
-1. Fork or clone this repository.  
-2. In Jenkins, create a **Multibranch Pipeline** job pointing to this repo.  
-3. Configure the following Jenkins credentials:
-   - `dockerhub-creds` → DockerHub username/password  
-   - `GitHub-token` → GitHub personal access token  
-   - `ec2-user` → SSH private key for your EC2 instance  
-   - (Optional) AWS access key/secret for future EKS deployments  
-4. Ensure the Jenkins agent has the required tools installed (see above).  
-5. Push changes → Jenkins automatically triggers the pipeline for the updated branch.  
+The **SSH Agent plugin** is required to securely inject SSH private keys into the pipeline during the deployment stage.
 
 ---
 
-## ✅ Summary
+## 🔐 Jenkins Credentials Configuration
 
-The `master` branch of this project sets up a **complete CI/CD pipeline** for a Java Maven application:
-- Automatic versioning  
-- Build and packaging  
-- Docker image creation and publishing  
-- Deployment to AWS EC2  
-- Version updates committed back to GitHub  
+All sensitive information is securely stored using **Jenkins Credentials**.
 
-This provides a **production-ready delivery workflow** for Java apps running in containerized environments.
+### Configured Credentials
+
+| Credential ID     | Type                    | Purpose                           |
+| ----------------- | ----------------------- | --------------------------------- |
+| `aws-creds`       | AWS Access Key & Secret | Provision AWS infrastructure      |
+| `dockerhub-creds` | Username & Password     | Authenticate with Docker registry |
+| `ec2-ssh`         | SSH Private Key         | SSH access to EC2 instance        |
+
+* AWS credentials are used by Terraform to create and manage AWS resources.
+* Docker credentials allow Jenkins to push images to the container registry.
+* The SSH private key pair is used by the **SSH Agent plugin** to securely connect to the EC2 instance during deployment.
 
 ---
+
+## 🧰 Tools Installed on Jenkins
+
+The following tools are installed inside the Jenkins environment (or available on the Jenkins host):
+
+* **Docker**
+* **Terraform**
+* **Git**
+* **Java**
+* **Maven**
+
+These tools are required for building the application, containerizing it, provisioning infrastructure, and deploying the application.
+
+---
+
+## ☁️ Terraform Remote State Configuration
+
+* An **S3 bucket** was created in AWS to store the **Terraform remote state file**.
+* Terraform is configured to use this S3 bucket as its backend.
+* This ensures:
+
+  * State persistence across pipeline runs
+  * Safe and consistent infrastructure management
+  * Collaboration-ready infrastructure changes
+
+---
+
+## 🔄 CI/CD Pipeline Stages
+
+### 1️⃣ Build Application
+
+* Jenkins checks out the source code from the repository.
+* The Java application is built using Maven:
+
+  ```bash
+  mvn clean package
+  ```
+* The build generates a deployable application artifact.
+
+---
+
+### 2️⃣ Build & Push Docker Image
+
+* Jenkins authenticates to the Docker registry using stored credentials.
+* The Docker image is built using the provided `Dockerfile`.
+* The image is tagged and pushed to the Docker registry.
+
+This ensures the application is packaged in a consistent and portable format.
+
+---
+
+### 3️⃣ Provision Infrastructure (AWS)
+
+* Terraform is executed from the pipeline to provision AWS resources.
+* Infrastructure includes:
+
+  * EC2 instance
+  * Security groups
+  * Networking components (as defined in Terraform)
+* Terraform uses:
+
+  * AWS credentials stored in Jenkins
+  * S3 backend for remote state storage
+
+Infrastructure provisioning is fully automated and repeatable.
+
+---
+
+### 4️⃣ Deploy Application
+
+* Jenkins uses the **SSH Agent plugin** to load the SSH private key.
+* Jenkins establishes an SSH connection to the EC2 instance.
+* Deployment steps include:
+
+  * Copying deployment scripts and Docker Compose files
+  * Pulling the latest Docker image on the server
+  * Running containers using Docker Compose
+
+The application is deployed without manual intervention.
+
+---
+
+## 🔁 Multibranch Pipeline Behavior
+
+* Jenkins automatically scans all repository branches.
+* Any branch containing a `Jenkinsfile` is automatically built.
+* This supports feature development, testing, and production workflows.
+
+---
+
+## ✅ Key Benefits
+
+* Jenkins running in Docker on DigitalOcean
+* Secure credential management via Jenkins
+* Infrastructure as Code with Terraform
+* Remote Terraform state stored in S3
+* Dockerized application delivery
+* Automated AWS provisioning and deployment
+* Scalable multibranch CI/CD workflow
+
+---
+
+## 📌 Summary
+
+This project demonstrates a **production-style CI/CD pipeline** where:
+
+* Jenkins runs as a container in the cloud
+* Credentials are securely managed
+* Infrastructure is provisioned dynamically on AWS
+* Applications are built, containerized, and deployed automatically
+* Terraform state is safely stored remotely in S3
+
+---
+
