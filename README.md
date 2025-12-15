@@ -1,6 +1,6 @@
 ---
 
-# COmplete CI/CD Pipeline with Jenkins
+# Complete CI/CD Pipeline with Jenkins
 
 This repository demonstrates a **complete CI/CD pipeline** built using **Jenkins Multibranch Pipeline** to build a Java application, containerize it with Docker, provision AWS infrastructure using Terraform, and deploy the application to an EC2 instance via SSH.
 
